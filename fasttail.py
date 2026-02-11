@@ -144,7 +144,7 @@ def run_oneshot(token, n, use_color, no_pager):
         pager.communicate(input=output.encode())
 
 
-def run_daemon(token, logfile, interval):
+def run_daemon(token, logfile, interval, backfill=0):
     print(f"Starting daemon, polling every {interval}s, logging to {logfile}",
           file=sys.stderr)
 
@@ -153,7 +153,8 @@ def run_daemon(token, logfile, interval):
     seen_ids = set()
 
     # Seed with current emails so we don't dump the entire inbox on first run
-    emails = fetch_emails(api_url, account_id, headers, limit=50)
+    seed_limit = max(50, backfill)
+    emails = fetch_emails(api_url, account_id, headers, limit=seed_limit)
     for email in emails:
         seen_ids.add(email["id"])
 
@@ -162,6 +163,13 @@ def run_daemon(token, logfile, interval):
     with open(logfile, "a") as f:
         ts = datetime.now().strftime("%a %b %d %H:%M:%S %Y")
         f.write(f"# daemon started {ts}, watching for new mail\n")
+
+        if backfill > 0:
+            backfill_emails = sorted(emails[:backfill],
+                                     key=lambda e: e["receivedAt"])
+            for email in backfill_emails:
+                f.write(format_email(email, mailboxes))
+
         f.flush()
 
         while True:
@@ -211,6 +219,10 @@ def main():
         "--interval", type=int, default=60,
         help="Polling interval in seconds for daemon mode (default: 60)"
     )
+    parser.add_argument(
+        "--backfill", type=int, default=0, metavar="N",
+        help="Write last N emails to log on daemon startup (default: 0)"
+    )
     args = parser.parse_args()
 
     token = os.environ.get("FASTMAIL_TOKEN")
@@ -221,7 +233,7 @@ def main():
     if args.daemon:
         signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
         signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
-        run_daemon(token, args.logfile, args.interval)
+        run_daemon(token, args.logfile, args.interval, args.backfill)
     else:
         if args.color == "always":
             use_color = True

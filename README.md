@@ -70,9 +70,10 @@ Options:
 
 - `--logfile PATH` — log file path (default: `~/.fastmail.log`)
 - `--interval SECONDS` — polling interval (default: `60`)
+- `--backfill N` — write the last N emails to the log on startup (default: `0`)
 
 ```bash
-python3 fasttail.py --daemon --logfile /tmp/mail.log --interval 30
+python3 fasttail.py --daemon --logfile /tmp/mail.log --interval 30 --backfill 20
 ```
 
-The daemon seeds the last 50 email IDs on startup so it won't flood the log with old mail — only new arrivals get appended. Stop it with Ctrl-C or `kill`.
+By default, only new arrivals after startup get logged. Use `--backfill` to populate the log with recent messages so there's something to see right away. Stop with Ctrl-C or `kill`.
