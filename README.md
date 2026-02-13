@@ -93,3 +93,18 @@ Tries three strategies in priority order:
 3. **HTML body link** — parse the email for unsubscribe links
 
 Some senders require JavaScript or manual confirmation; the tool will print the URL to open in a browser when it can't complete the process automatically.
+
+### trash_by_sender — move emails from a sender to Trash
+
+Bulk-move all emails from a given sender to your Trash folder.
+
+```bash
+python3 trash_by_sender.py someone@example.com             # move all to trash
+python3 trash_by_sender.py someone@example.com --dry-run    # preview without moving
+python3 trash_by_sender.py someone@example.com --limit 10   # move at most 10
+```
+
+Options:
+
+- `--dry-run` — list matched emails without moving them
+- `--limit N` — cap the number of emails to move
