@@ -1,6 +1,6 @@
-# fasttail
+# fastmail-tools
 
-A command-line tool to fetch recent emails from Fastmail using the JMAP API, with procmail-style log output.
+A collection of command-line tools for Fastmail, built on the JMAP API.
 
 ## Setup
 
@@ -21,16 +21,18 @@ Export it:
 export FASTMAIL_TOKEN=your_token_here
 ```
 
-## Usage
+## Tools
 
-### Fetch recent emails
+### fasttail — fetch and tail recent emails
+
+Procmail-style log output for your Fastmail inbox.
 
 ```bash
 python3 fasttail.py          # last 10 emails
 python3 fasttail.py -n 20    # last 20 emails
 ```
 
-Output is procmail `LOGABSTRACT` style:
+Output:
 
 ```
 From sender@example.com  Wed Feb 11 14:07:58 2026
@@ -38,42 +40,56 @@ From sender@example.com  Wed Feb 11 14:07:58 2026
   Folder: Inbox	136985
 ```
 
-### Color output
+Options:
+
+- `--color auto|always|never` — color output (default: `auto`)
+- `--no-pager` — disable built-in `less` pager
+
+#### Daemon mode
+
+Poll for new messages and append to a log file:
 
 ```bash
-python3 fasttail.py --color auto     # default — color in terminal, plain when piped
-python3 fasttail.py --color always   # force color on
-python3 fasttail.py --color never    # no color
-```
-
-### Pager
-
-By default, output is paged through `less` when running in a terminal. Disable with:
-
-```bash
-python3 fasttail.py --no-pager
-```
-
-### Daemon mode
-
-Run as a background process that polls Fastmail for new messages and appends them to a log file:
-
-```bash
-# Terminal 1: start the daemon
 python3 fasttail.py --daemon &
-
-# Terminal 2: watch for new mail
 tail -f ~/.fastmail.log
 ```
 
-Options:
-
 - `--logfile PATH` — log file path (default: `~/.fastmail.log`)
 - `--interval SECONDS` — polling interval (default: `60`)
-- `--backfill N` — write the last N emails to the log on startup (default: `0`)
+- `--backfill N` — write last N emails to log on startup (default: `0`)
+
+### top_senders — rank senders by volume
+
+Show your top email senders across all mailboxes.
 
 ```bash
-python3 fasttail.py --daemon --logfile /tmp/mail.log --interval 30 --backfill 20
+python3 top_senders.py              # top 25 senders, last 6 months
+python3 top_senders.py -n 50        # top 50
+python3 top_senders.py --months 12  # last year
 ```
 
-By default, only new arrivals after startup get logged. Use `--backfill` to populate the log with recent messages so there's something to see right away. Stop with Ctrl-C or `kill`.
+Output:
+
+```
+   1. 904  hello@pacas.us
+   2. 783  harryanddavid@harryanddavid-email.com
+   3. 772  info@jomashop.com
+  ...
+```
+
+### unsubscribe — unsubscribe from a sender
+
+Find and execute the unsubscribe mechanism for a given sender.
+
+```bash
+python3 unsubscribe.py hello@pacas.us           # unsubscribe
+python3 unsubscribe.py --dry-run hello@pacas.us  # just show what it would do
+```
+
+Tries three strategies in priority order:
+
+1. **RFC 8058 one-click POST** — `List-Unsubscribe-Post` header (most reliable)
+2. **List-Unsubscribe header URL** — visit the URL, submit any confirmation form
+3. **HTML body link** — parse the email for unsubscribe links
+
+Some senders require JavaScript or manual confirmation; the tool will print the URL to open in a browser when it can't complete the process automatically.
